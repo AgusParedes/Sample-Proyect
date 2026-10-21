@@ -4,56 +4,13 @@
   min-height: 100vh;
   min-height: 100svh;
   overflow: hidden;
-  background: #f8f8f8;
+  background: #000;
 
   &__canvas {
     display: block;
     width: 100%;
     height: 100vh;
     height: 100svh;
-  }
-
-  // ── Rectángulo con el nombre ─────────────────────────────────────
-  // Cerrado por defecto; el JS agrega .is-open cuando el logo ya terminó de armarse.
-  &__name {
-    --h: clamp(22px, 7vw, 44px); // altura de las letras: todo el bloque escala con esto
-    position: absolute;
-    z-index: 1;
-    top: clamp(20px, 6vh, 56px);
-    left: 50%;
-    transform: translateX(-50%);
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: calc(var(--h) * .36);
-    padding: calc(var(--h) * .8) calc(var(--h) * 1.1);
-    background: #f8f8f8;
-    pointer-events: none;
-    clip-path: inset(50% 50% 50% 50%);
-
-    // 1) un punto se estira hasta ser una línea, 2) la línea se abre hacia arriba y abajo
-    &.is-open {
-      animation: hero-pixel-panel 1.15s both;
-
-      .hero-pixel__word img {
-        animation: hero-pixel-word .85s cubic-bezier(.16, 1, .3, 1) var(--d, .75s) both;
-      }
-    }
-  }
-
-  // Cada palabra sube desde detrás de una "ventana" (overflow hidden)
-  &__word {
-    display: block;
-    overflow: hidden;
-    line-height: 0;
-
-    img {
-      display: block;
-      height: var(--h);
-      width: auto;
-      transform: translateY(105%);
-      user-select: none;
-    }
   }
 
   &__replay {
@@ -90,23 +47,58 @@
   }
 }
 
-@keyframes hero-pixel-panel {
-  0% {
-    clip-path: inset(50% 50% 50% 50%);
-    animation-timing-function: cubic-bezier(.7, 0, .2, 1);
+// ── "Scroll down" ─────────────────────────────────────────────────
+.hero-pixel {
+  &__scroll {
+    position: absolute;
+    z-index: 2;
+    bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, .8);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .6s ease;
+
+    // Aparece al terminar la animación y se va apenas se empieza a scrollear
+    &.is-visible { opacity: 1; transition: opacity 1s ease .5s; }
+    &.is-scrolled { opacity: 0; transition: opacity .3s ease; }
   }
-  38% {
-    clip-path: inset(calc(50% - 1px) 0 calc(50% - 1px) 0);
-    animation-timing-function: cubic-bezier(.7, 0, .2, 1);
+
+  &__scroll-text {
+    font-size: 11px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    padding-left: .28em; // compensa el espaciado de la última letra para que quede centrado
+    white-space: nowrap;
   }
-  100% {
-    clip-path: inset(0 0 0 0);
+
+  // Línea fina con un trazo que baja una y otra vez
+  &__scroll-line {
+    position: relative;
+    display: block;
+    width: 1px;
+    height: 46px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, .22);
+
+    i {
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 55%;
+      background: #fff;
+      animation: hero-pixel-scroll 1.9s cubic-bezier(.65, 0, .35, 1) infinite;
+    }
   }
 }
 
-@keyframes hero-pixel-word {
-  from { transform: translateY(105%); }
-  to   { transform: translateY(0); }
+@keyframes hero-pixel-scroll {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(190%); }
 }
 
 @media (max-width: 600px) {
@@ -117,14 +109,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .hero-pixel__scroll-line i { animation: none; transform: none; height: 100%; opacity: .6; }
   .hero-pixel__hint { display: none; }
-
-  .hero-pixel__name.is-open {
-    animation-duration: .01s;
-
-    .hero-pixel__word img {
-      animation-duration: .01s;
-      animation-delay: 0s;
-    }
-  }
 }

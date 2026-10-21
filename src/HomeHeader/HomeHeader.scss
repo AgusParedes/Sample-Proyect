@@ -1,0 +1,145 @@
+.home-header {
+  --header-pad: clamp(12px, 3vw, 40px);
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 10;
+  height: calc(clamp(56px, 9vh, 84px) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) var(--header-pad) 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr; // izquierda | nombre (siempre centrado) | derecha
+  align-items: center;
+  pointer-events: none; // no tapa lo que haya debajo; solo los botones y el nombre son clickeables
+  // Se invierte solo: queda blanco sobre el hero negro y negro cuando pasa sobre el fondo blanco
+  mix-blend-mode: difference;
+
+  &__side {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    // Los botones aparecen junto con el nombre
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .8s ease .35s, visibility 0s linear .35s;
+
+    &--left { justify-self: start; }
+    &--right { justify-self: end; }
+  }
+
+  &.is-ready &__side {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity .8s ease .35s, visibility 0s;
+  }
+
+  // ── Botones (área táctil de 44 px) ───────────────────────────────
+  &__btn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: #fff;
+    background: transparent;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: background 180ms ease, transform 180ms ease;
+
+    svg {
+      width: 23px;
+      height: 23px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    &:hover { background: rgba(255, 255, 255, .12); }
+    &:active { transform: scale(.94); }
+    &:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  }
+
+  // Hamburguesa: tres líneas; la del medio se acorta al pasar el mouse
+  &__bars {
+    display: grid;
+    gap: 5px;
+    width: 22px;
+
+    i {
+      display: block;
+      height: 1.6px;
+      border-radius: 2px;
+      background: currentColor;
+      transition: transform 220ms ease;
+    }
+    i:nth-child(2) { transform-origin: left center; }
+  }
+
+  &__btn:hover &__bars i:nth-child(2) { transform: scaleX(.6); }
+
+  &__badge {
+    position: absolute;
+    top: 3px;
+    right: 1px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    color: #000;
+    background: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 16px;
+    text-align: center;
+  }
+
+  // ── Nombre en el centro ──────────────────────────────────────────
+  &__brand {
+    --h: clamp(15px, 2.1vw, 24px); // altura de las letras: todo el nombre escala con esto
+    display: flex;
+    align-items: center;
+    gap: calc(var(--h) * .36);
+    color: #fff;
+    text-decoration: none;
+    pointer-events: auto;
+
+    &:focus-visible { outline: 2px solid #fff; outline-offset: 6px; }
+  }
+
+  // Entrada: cada palabra sube desde detrás de una "ventana", una después de la otra
+  &.is-ready &__word img {
+    animation: home-header-word 1s cubic-bezier(.16, 1, .3, 1) var(--d, 0s) both;
+  }
+
+  &__word {
+    display: block;
+    overflow: hidden;
+    line-height: 0;
+
+    img {
+      display: block;
+      height: var(--h);
+      width: auto;
+      opacity: 0;
+      transform: translateY(110%);
+      user-select: none;
+    }
+  }
+}
+
+@keyframes home-header-word {
+  from { opacity: 0; transform: translateY(110%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-header.is-ready .home-header__word img {
+    animation-duration: .01s;
+    animation-delay: 0s;
+  }
+  .home-header__side,
+  .home-header.is-ready .home-header__side { transition: none; }
+}

@@ -1,0 +1,131 @@
+// Contenido del pop-up. La forma de manchón y su animación están en BlobReveal.
+// Todo está centrado y con márgenes generosos para que nada quede cortado por las esquinas redondeadas del manchón.
+.product-popup {
+  --blob-bg: #0c0c0c; // color del manchón
+  color: #fff;
+
+  // ── Zona 3D ──────────────────────────────────────────────────────
+  &__stage {
+    position: relative;
+    aspect-ratio: 1 / .92;
+    margin: 6% 6% 0;
+    background: radial-gradient(60% 60% at 50% 52%, #232323 0%, #0c0c0c 100%);
+
+    // Resplandor suave en el piso
+    &::after {
+      content: '';
+      position: absolute;
+      left: 27%;
+      right: 27%;
+      bottom: 9%;
+      height: 5%;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(255, 255, 255, .12), transparent);
+      pointer-events: none;
+    }
+
+    // La remera aparece creciendo cuando el manchón ya se está abriendo
+    .tshirt3d {
+      opacity: 0;
+      transform: scale(.7);
+      transition: opacity .2s ease, transform .2s ease;
+    }
+  }
+
+  &.is-open &__stage .tshirt3d {
+    opacity: 1;
+    transform: none;
+    transition: opacity .7s ease .55s, transform 1s cubic-bezier(.16, 1, .3, 1) .55s;
+  }
+
+  // ── Textos ───────────────────────────────────────────────────────
+  &__body {
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+    text-align: center;
+    padding: 4% 12% 10%;
+  }
+
+  // Cada elemento aparece uno tras otro cuando el manchón ya está casi abierto
+  &__brand, &__eyebrow, &__title, &__text, &__action {
+    margin: 0;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity .2s ease, transform .2s ease;
+  }
+
+  &.is-open &__brand,
+  &.is-open &__eyebrow,
+  &.is-open &__title,
+  &.is-open &__text,
+  &.is-open &__action {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity .6s ease calc(.8s + var(--i, 0) * .08s),
+      transform .7s cubic-bezier(.16, 1, .3, 1) calc(.8s + var(--i, 0) * .08s);
+  }
+
+  &__brand {
+    display: block;
+    height: 14px;
+    width: auto;
+    user-select: none;
+  }
+
+  &__eyebrow {
+    font-size: 11px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, .6);
+  }
+
+  &__title {
+    font-size: clamp(22px, 3vw, 28px);
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  &__text {
+    max-width: 30ch;
+    font-size: 14px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, .72);
+  }
+
+  &__action { padding-top: 6px; }
+
+  &__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border: 1px solid #fff;
+    border-radius: 999px;
+    color: #0c0c0c;
+    background: #fff;
+    font: inherit;
+    font-size: 12px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 200ms ease, background 200ms ease;
+
+    i { font-style: normal; transition: transform 200ms ease; }
+
+    &:hover { color: #fff; background: transparent; }
+    &:hover i { transform: translateX(4px); }
+    &:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-popup.is-open .tshirt3d,
+  .product-popup.is-open .product-popup__brand,
+  .product-popup.is-open .product-popup__eyebrow,
+  .product-popup.is-open .product-popup__title,
+  .product-popup.is-open .product-popup__text,
+  .product-popup.is-open .product-popup__action { transition-duration: .01s; transition-delay: 0s; }
+}

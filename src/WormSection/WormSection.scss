@@ -1,0 +1,58 @@
+// Sección con el gusano. Empieza justo donde termina el hero: el gusano sale de ese borde.
+.worm {
+  --worm-overlap: 0px;   // cuánto se mete debajo del hero (0 = empieza justo donde termina)
+  --worm-length: 420svh; // cuánto hay que scrollear para recorrerla (más alto = gusano más lento)
+  position: relative;
+  z-index: 2;
+  margin-top: calc(-1 * var(--worm-overlap));
+  height: var(--worm-length);
+  pointer-events: none; // el hero y los botones siguen siendo clickeables
+
+  // Fondo blanco desde donde termina el hero hacia abajo (la parte superpuesta queda transparente)
+  &::before {
+    content: '';
+    position: absolute;
+    inset: var(--worm-overlap) 0 0 0;
+    background: #fff;
+  }
+
+  &__sticky {
+    position: sticky;
+    z-index: 1;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+  }
+
+  &__canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  // ── Pop-ups en las curvas ─────────────────────────────────────────
+  // --stop-y = altura de la punta de la curva. Se centran ahí, pero nunca tan arriba
+  // como para meterse encima del hero.
+  &__stop {
+    --stop-gap: clamp(24px, 5vw, 72px); // separación respecto al centro (donde pasa el gusano)
+    position: absolute;
+    z-index: 3;
+    top: max(var(--stop-y), 330px);
+    width: min(420px, calc(50% - var(--stop-gap) - 24px));
+    transform: translateY(-50%);
+    pointer-events: auto;
+
+    &--left { right: calc(50% + var(--stop-gap)); }
+    &--right { left: calc(50% + var(--stop-gap)); }
+  }
+}
+
+// En celular no hay lugar al costado: el pop-up queda pegado a su borde y el gusano pasa por el otro lado
+@media (max-width: 700px) {
+  .worm__stop {
+    width: min(270px, 70vw);
+
+    &--left { right: auto; left: 14px; }
+    &--right { left: auto; right: 14px; }
+  }
+}

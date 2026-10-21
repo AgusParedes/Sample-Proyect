@@ -1,0 +1,12 @@
+.blob-reveal {
+  position: relative;
+
+  // Cerrado del todo: no se ve ni se puede enfocar con el teclado
+  &[data-state='closed'] { visibility: hidden; }
+
+  // El manchón: todo lo que está adentro se ve solo dentro de la forma (el recorte se anima desde BlobReveal.jsx)
+  // El color se cambia con --blob-bg (por defecto blanco)
+  &__shape {
+    background: var(--blob-bg, #fff);
+  }
+}
