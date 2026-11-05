@@ -42,6 +42,10 @@ const FIRE_RED = 0.2;       // proporción de brasas rojas (0 = todo blanco)
 const MAX_FIRE = 700;       // máximo de píxeles volando a la vez
 // Header
 const NAME_AT = FLY_TIME + WAVE_TIME - 0.3; // segundos en que se considera "terminó la animación" (aparece el nombre)
+// Scroll: al scrollear, el zoom se mete dentro de un cuadradito del logo hasta llenar toda la pantalla de blanco
+const SCROLL_LENGTH = 2.6;  // largo del zoom en pantallas: 2.6 = hay que scrollear 2,6 alturas de pantalla
+const FILL_AT = 0.9;        // en qué punto del scroll (0 a 1) el cuadradito ya llena toda la pantalla; lo que sigue es blanco puro
+const ZOOM_SMOOTH = 7;      // qué tan pegado sigue al scroll (más alto = más directo, más bajo = más suave)
 // ─────────────────────────────────────────────────────────────────
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
@@ -208,12 +212,14 @@ function waveHeight(dist, front, decay, fade) {
 export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
   const canvasRef = useRef(null);
   const scrollRef = useRef(null);
+  const sectionRef = useRef(null);
   const callbacks = useRef({});
   callbacks.current = { onIntroStart, onIntroDone };
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const dprMax = window.matchMedia('(pointer: coarse)').matches ? 1.5 : 2; // celulares: menos píxeles que dibujar
     const image = new Image();
     image.src = logo;
 
@@ -256,6 +262,8 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
 
     const group = new THREE.Group();   // vuelo y giro del logo brillante
     scene.add(group);
+    const zoomGroup = new THREE.Group(); // píxeles, ola y fuego: se agranda todo junto para meterse en un cuadradito
+    scene.add(zoomGroup);
     const dummy = new THREE.Object3D();
     const bgColor = new THREE.Color(BACKGROUND);
 
@@ -266,12 +274,14 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
     let fireStep = 4, fireXo = 0, fireYo = 0, lastNow = 0;
     let startTime = 0, frame = 0, disposed = false, introTimer = 0, curDpr = 0, onScreen = true;
     let needsWrite = true, drawnFinal = false;
+    let locked = true, zoomP = 0; // locked: hasta que termina la intro no se puede scrollear
+    let focus = { x: 0, y: 0 }, zoomMax = 1; // cuadradito al que se entra y cuánto hay que agrandar para llenar la pantalla
 
     function disposeLogo() {
       if (glossy) { group.remove(glossy); glossy.geometry.dispose(); glossy = null; }
-      if (pixelMesh) { scene.remove(pixelMesh); pixelMesh.geometry.dispose(); pixelMesh.dispose(); pixelMesh = null; }
-      if (waveMesh) { scene.remove(waveMesh); waveMesh.geometry.dispose(); waveMesh.dispose(); waveMesh = null; }
-      if (fireMesh) { scene.remove(fireMesh); fireMesh.geometry.dispose(); fireMesh.dispose(); fireMesh = null; }
+      if (pixelMesh) { zoomGroup.remove(pixelMesh); pixelMesh.geometry.dispose(); pixelMesh.dispose(); pixelMesh = null; }
+      if (waveMesh) { zoomGroup.remove(waveMesh); waveMesh.geometry.dispose(); waveMesh.dispose(); waveMesh = null; }
+      if (fireMesh) { zoomGroup.remove(fireMesh); fireMesh.geometry.dispose(); fireMesh.dispose(); fireMesh = null; }
       fire = [];
     }
 
@@ -363,7 +373,13 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
         pixelMesh.setColorAt(i, col);
       });
       pixelMesh.position.set(0, height * 0.01, 0.5);
-      scene.add(pixelMesh);
+      // Cuadradito al que entra el zoom: el más cercano al centro que sea blanco puro y entero
+      let pick = null;
+      for (const it of items) if (it.a === 1 && it.tone === 0 && (!pick || it.d < pick.d)) pick = it;
+      if (!pick) pick = items[0];
+      focus = pick ? { x: pick.x, y: pick.y + height * 0.01 } : { x: 0, y: 0 };
+      zoomMax = (Math.max(width, height) * 1.08) / cell; // con este aumento el cuadradito tapa toda la pantalla
+      zoomGroup.add(pixelMesh);
       needsWrite = true;
 
       // ── 3) Ola: grilla de píxeles de toda la pantalla, centrada en el logo ──
@@ -375,7 +391,7 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
       waveMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       for (let i = 0; i < waveCells.length; i++) waveMesh.setColorAt(i, bgColor);
       waveMesh.position.set(0, height * 0.01, 0.2); // detrás de los píxeles del logo
-      scene.add(waveMesh);
+      zoomGroup.add(waveMesh);
       needsWaveWrite = true;
 
       // ── 4) Fuego: píxeles que suben desde el tope incompleto del logo ──
@@ -387,7 +403,7 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
       for (let i = 0; i < MAX_FIRE; i++) fireMesh.setColorAt(i, bgColor);
       fireMesh.count = 0;
       fireMesh.position.set(0, height * 0.01, 0.6); // por encima del logo pixelado
-      scene.add(fireMesh);
+      zoomGroup.add(fireMesh);
       for (const m of [pixelMesh, waveMesh, fireMesh]) m.frustumCulled = false;
     }
 
@@ -496,7 +512,7 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
     // navegador aparece y desaparece al cambiar la dirección del scroll y dispara eventos de resize.
     function resize(force = false) {
       const w = canvas.clientWidth, h = canvas.clientHeight;
-      const d = Math.min(window.devicePixelRatio || 1, 2);
+      const d = Math.min(window.devicePixelRatio || 1, dprMax);
       if (!force && w === width && h === height && d === curDpr) return;
       curDpr = d;
       width = w; height = h;
@@ -517,9 +533,11 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
       fire = []; fireAcc = 0; lastNow = 0;
       if (fireMesh) fireMesh.count = 0;
       clearTimeout(introTimer);
+      locked = true;
       scrollRef.current?.classList.remove('is-visible');
       callbacks.current.onIntroStart?.();
       introTimer = setTimeout(() => {
+        locked = false;
         callbacks.current.onIntroDone?.();
         scrollRef.current?.classList.add('is-visible');
       }, reduceMotion ? 0 : NAME_AT * 1000);
@@ -591,6 +609,20 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
         oy = Math.cos(since * 77) * SHAKE * 0.7 * k;
         oz = -Math.sin(Math.PI * clamp(since / 0.25)) * 18;
       }
+
+      // 7) Scroll down: el zoom se mete dentro de un cuadradito del logo hasta que su blanco llena toda la pantalla
+      const section = sectionRef.current;
+      if (!reduceMotion && section) {
+        const range = Math.max(1, section.offsetHeight - height);
+        const target = locked ? 0 : clamp(-section.getBoundingClientRect().top / range);
+        zoomP += (target - zoomP) * (1 - Math.exp(-ZOOM_SMOOTH * dt)); // sigue al scroll con suavidad
+        if (Math.abs(target - zoomP) < 0.0005) zoomP = target;
+        const k = clamp(zoomP / FILL_AT);
+        const e = k * k * (3 - 2 * k);                    // arranca y termina despacio
+        const S = Math.pow(zoomMax, e);                   // zoom exponencial: se siente parejo
+        zoomGroup.scale.set(S, S, 1);
+        zoomGroup.position.set(focus.x * (1 - S), focus.y * (1 - S), 0); // el cuadradito elegido queda fijo en su lugar
+      }
       camera.position.set(ox, oy, camDist + oz);
 
       renderer.render(scene, camera);
@@ -599,20 +631,35 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
     }
 
     image.onload = () => { resize(true); restart(); frame = requestAnimationFrame(tick); };
-    const resizeObserver = new ResizeObserver(() => resize());
+    // Reconstruir el logo es lo más pesado: al arrastrar el borde de la ventana se espera a que termine
+    let resizeTimer = 0;
+    const resizeObserver = new ResizeObserver(() => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => resize(), 120);
+    });
     resizeObserver.observe(canvas);
     const visibility = new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; });
     visibility.observe(canvas);
     // "Scroll down" desaparece apenas se empieza a scrollear
-    const onScroll = () => scrollRef.current?.classList.toggle('is-scrolled', window.scrollY > 40);
+    // Mientras la intro no terminó, el scroll queda bloqueado (y si algo lo mueve, vuelve arriba)
+    const stopIfLocked = (e) => { if (locked) e.preventDefault(); };
+    const onScroll = () => {
+      if (locked && window.scrollY > 0) { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); return; }
+      scrollRef.current?.classList.toggle('is-scrolled', window.scrollY > 40);
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('wheel', stopIfLocked, { passive: false });
+    window.addEventListener('touchmove', stopIfLocked, { passive: false });
     return () => {
       disposed = true;
       clearTimeout(introTimer);
+      clearTimeout(resizeTimer);
       cancelAnimationFrame(frame);
       resizeObserver.disconnect();
       visibility.disconnect();
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('wheel', stopIfLocked);
+      window.removeEventListener('touchmove', stopIfLocked);
       disposeLogo();
       glossMat.dispose(); pixelMat.dispose(); waveMat.dispose();
       envTex.dispose(); pmrem.dispose();
@@ -621,11 +668,14 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
   }, []);
 
   return (
-    <section className="hero-pixel">
-      <canvas ref={canvasRef} className="hero-pixel__canvas" aria-label="Logo en 3D estampándose contra el fondo" />
-      <div className="hero-pixel__scroll" ref={scrollRef} aria-hidden="true">
-        <span className="hero-pixel__scroll-text">Scroll down</span>
-        <span className="hero-pixel__scroll-line"><i /></span>
+    <section className="hero-pixel" ref={sectionRef} style={{ '--scroll-len': SCROLL_LENGTH }}>
+      {/* El escenario queda fijo mientras se scrollea el zoom */}
+      <div className="hero-pixel__stage">
+        <canvas ref={canvasRef} className="hero-pixel__canvas" aria-label="Logo en 3D estampándose contra el fondo" />
+        <div className="hero-pixel__scroll" ref={scrollRef} aria-hidden="true">
+          <span className="hero-pixel__scroll-text">Scroll down</span>
+          <span className="hero-pixel__scroll-line"><i /></span>
+        </div>
       </div>
     </section>
   );

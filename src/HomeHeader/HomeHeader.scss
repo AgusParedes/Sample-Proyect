@@ -4,7 +4,8 @@
   inset: 0 0 auto 0;
   z-index: 10;
   height: calc(clamp(56px, 9vh, 84px) + env(safe-area-inset-top, 0px));
-  padding: env(safe-area-inset-top, 0px) var(--header-pad) 0;
+  // max(...) deja lugar al notch cuando el celular está girado
+  padding: env(safe-area-inset-top, 0px) max(var(--header-pad), env(safe-area-inset-right, 0px)) 0 max(var(--header-pad), env(safe-area-inset-left, 0px));
   display: grid;
   grid-template-columns: 1fr auto 1fr; // izquierda | nombre (siempre centrado) | derecha
   align-items: center;
@@ -133,6 +134,16 @@
 @keyframes home-header-word {
   from { opacity: 0; transform: translateY(110%); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+// Celulares muy angostos (320–380 px): botones y nombre un poco más chicos para que no se pisen
+@media (max-width: 380px) {
+  .home-header {
+    --header-pad: 8px;
+
+    &__btn { width: 40px; height: 40px; }
+    &__brand { --h: 13px; }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,21 +1,7 @@
-import HomeHeader from './HomeHeader/HomeHeader.jsx';
-import HeroPixel from '../src/HeroPixel/HeroPixel.jsx';
-import WormSection from './WormSection/WormSection.jsx';
-import { useState } from 'react';
+import Home from './Home/Home.jsx';
 
 function App() {
-  const [ready, setReady] = useState(false);
-  return (
-      <>
-      <HomeHeader ready={ready} />
-      <HeroPixel
-        onIntroStart={() => setReady(false)}
-        onIntroDone={() => setReady(true)}
-      />
-      <WormSection />
-
-    </>
-  )
+  return <Home />;
 }
 
 export default App;

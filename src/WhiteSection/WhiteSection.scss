@@ -1,0 +1,11 @@
+// Empalma con el blanco del final del zoom del hero
+.white-section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding-top: clamp(56px, 9vh, 84px); // lugar para el header fijo
+  background: #fff;
+}
