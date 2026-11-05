@@ -7,6 +7,7 @@ import './Home.scss';
 
 export default function Home() {
   const [introDone, setIntroDone] = useState(false);
+  const [revealed, setRevealed] = useState(false); // el zoom del hero terminó: ya se ve la sección blanca
 
   // Al entrar o recargar, la página siempre arranca arriba, en el hero
   useEffect(() => {
@@ -23,9 +24,9 @@ export default function Home() {
   return (
     <main className="home">
       <HomeHeader ready={introDone} onMenu={openMenu} onCart={goToCart} onAccount={goToAccount} />
-      <HeroPixel onIntroStart={() => setIntroDone(false)} onIntroDone={() => setIntroDone(true)} />
+      <HeroPixel onIntroStart={() => setIntroDone(false)} onIntroDone={() => setIntroDone(true)} onReveal={setRevealed} />
       <WhiteSection>
-        <CategoryCarousel onSelect={goToCategory} />
+        <CategoryCarousel play={revealed} onSelect={goToCategory} />
       </WhiteSection>
     </main>
   );

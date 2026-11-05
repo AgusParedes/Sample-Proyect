@@ -1,190 +1,195 @@
-// Carrusel de categorías: un escenario negro con las prendas 3D girando.
-// Colores y tipografía se cambian acá arriba.
+// Carrusel de tarjetas de categorías. Cada tarjeta lleva la prenda 3D, un título, una mini descripción y "Ver más".
+// Medidas y colores se cambian acá arriba.
 .cc {
-  --cc-bg: #000;
-  --cc-fg: #fff;
-  --cc-name: #1e1e1e;               // color del nombre gigante que va detrás de la prenda
-  --cc-font: inherit;
-  --cc-ease: cubic-bezier(.22, 1, .36, 1);
+  --card-w: min(400px, 78vw);  // ancho de cada tarjeta
+  --media-h: var(--card-w);    // alto del recuadro donde gira la prenda (cuadrado)
+  --body-h: 220px;             // alto de la parte de texto
+  --card-bg: #0a0a0a;
+  --card-fg: #fff;
+  --pad-x: clamp(18px, 4vw, 56px);
+  --ease: cubic-bezier(.22, 1, .36, 1);
 
   position: relative;
-  padding: clamp(12px, 3vw, 40px);
+  padding: clamp(8px, 2vw, 24px) 0 clamp(24px, 4vw, 56px);
   background: #fff;
+  color: #000;
   outline: none;
 
-  &__stage {
-    position: relative;
-    height: min(82vh, 760px);
-    height: min(82svh, 760px);
-    min-height: 440px;
-    overflow: hidden;
-    isolation: isolate;
-    border-radius: clamp(18px, 3vw, 32px);
-    color: var(--cc-fg);
-    background: radial-gradient(120% 90% at 50% 42%, #1a1a1a 0%, var(--cc-bg) 68%);
-  }
-
-  &:focus-visible &__stage { box-shadow: 0 0 0 3px rgba(0, 0, 0, .5), 0 0 0 5px #fff inset; }
-
-  // El canvas es transparente: el nombre se ve por detrás de las prendas
-  &__canvas {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    display: block;
-    width: 100%;
-    height: 100%;
-    cursor: grab;
-    touch-action: pan-y; // deja scrollear la página para arriba y abajo; el costado lo maneja el carrusel
-    &.is-grabbing { cursor: grabbing; }
-  }
-
-  // ── Nombre gigante ───────────────────────────────────────────────
-  &__names {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    display: grid;
-    place-items: center;
-    padding-bottom: 6%;
-    pointer-events: none;
-    font-family: var(--cc-font);
-    font-size: clamp(40px, 12vw, 190px);
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -.02em;
-    text-transform: uppercase;
-    color: var(--cc-name);
-    user-select: none;
-  }
-
-  // Los tres nombres están apilados; el de afuera sale hacia un costado y el nuevo entra desde el otro
-  &__name {
-    grid-area: 1 / 1;
-    white-space: nowrap;
-    transition: transform .9s var(--cc-ease), opacity .45s ease, filter .6s ease;
-
-    &[data-rel='0'] { opacity: 1; transform: none; filter: blur(0); }
-    &[data-rel='1'] { opacity: 0; transform: translateX(38%); filter: blur(10px); }
-    &[data-rel='-1'] { opacity: 0; transform: translateX(-38%); filter: blur(10px); }
-  }
-
-  // ── Barra de arriba ──────────────────────────────────────────────
-  &__top {
-    position: absolute;
-    z-index: 2;
-    inset: clamp(16px, 2.6vw, 30px) clamp(18px, 3vw, 36px) auto;
+  // ── Encabezado: título chico y flechas ──────────────────────────
+  &__head {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    pointer-events: none;
+    justify-content: space-between;
+    padding: 0 var(--pad-x);
+  }
+
+  &__eyebrow {
     font-size: 11px;
     letter-spacing: .28em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, .78);
   }
 
-  &__count { display: inline-flex; align-items: center; gap: .6em; }
+  &__arrows { display: flex; gap: 10px; }
 
-  // Número que rueda hacia arriba o hacia abajo
-  &__num {
-    position: relative;
-    display: inline-grid;
-    overflow: hidden;
-    > span {
-      grid-area: 1 / 1;
-      transition: transform .7s var(--cc-ease), opacity .4s ease;
-      &[data-rel='0'] { transform: none; opacity: 1; }
-      &[data-rel='1'] { transform: translateY(110%); opacity: 0; }
-      &[data-rel='-1'] { transform: translateY(-110%); opacity: 0; }
-    }
-  }
-  &__of { opacity: .45; }
-
-  // ── Flechas ──────────────────────────────────────────────────────
   &__arrow {
-    position: absolute;
-    z-index: 2;
-    top: 50%;
     display: grid;
     place-items: center;
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     padding: 0;
-    border: 1px solid rgba(255, 255, 255, .28);
+    border: 1px solid rgba(0, 0, 0, .25);
     border-radius: 50%;
-    color: #fff;
-    background: rgba(0, 0, 0, .25);
-    backdrop-filter: blur(6px);
+    color: #000;
+    background: transparent;
     cursor: pointer;
-    transform: translateY(-50%);
-    transition: background .25s ease, color .25s ease, transform .25s var(--cc-ease), border-color .25s ease;
+    transition: background .25s ease, color .25s ease, border-color .25s ease, transform .25s var(--ease);
 
     svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-    &--prev { left: clamp(12px, 2.6vw, 32px); }
-    &--next { right: clamp(12px, 2.6vw, 32px); }
-    &:hover { background: #fff; color: #000; border-color: #fff; }
-    &:active { transform: translateY(-50%) scale(.92); }
-    &:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+    &:hover { background: #000; color: #fff; border-color: #000; }
+    &:active { transform: scale(.92); }
+    &:focus-visible { outline: 2px solid #000; outline-offset: 3px; }
   }
 
-  // ── Abajo: botón y puntitos ──────────────────────────────────────
-  &__bottom {
+  // ── Escenario: tarjetas + canvas 3D encima ──────────────────────
+  &__stage {
+    position: relative;
+    overflow: hidden;
+    padding: 28px 0 44px; // lugar para la sombra de las tarjetas
+    cursor: grab;
+    touch-action: pan-y;  // deja scrollear la página para arriba y abajo; el costado lo maneja el carrusel
+    user-select: none;
+    &.is-grabbing { cursor: grabbing; }
+  }
+
+  &__track {
+    position: relative;
+    width: 100%;
+    height: calc(var(--media-h) + var(--body-h));
+  }
+
+  // El canvas transparente cubre todo el escenario; no recibe clics
+  &__canvas {
     position: absolute;
-    z-index: 2;
-    inset: auto 0 clamp(18px, 3vw, 34px);
-    display: grid;
-    justify-items: center;
-    gap: 18px;
+    inset: 0;
+    z-index: 50;
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  // ── Tarjeta ──────────────────────────────────────────────────────
+  // La posición, el tamaño y la opacidad los maneja el JS en cada cuadro (por eso arranca invisible)
+  &__card {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    display: flex;
+    flex-direction: column;
+    width: var(--card-w);
+    height: calc(var(--media-h) + var(--body-h));
+    overflow: hidden;
+    border-radius: 28px;
+    color: var(--card-fg);
+    background: var(--card-bg);
+    box-shadow: 0 34px 60px -34px rgba(0, 0, 0, .55);
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+
+  // Recuadro de la prenda: un fondo con luz suave para que el blanco se despegue
+  &__media {
+    flex: none;
+    height: var(--media-h);
+    background: radial-gradient(70% 62% at 50% 46%, #2b2b2b 0%, #141414 60%, var(--card-bg) 100%);
+  }
+
+  &__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 6px 26px 26px;
+  }
+
+  &__index {
+    font-size: 11px;
+    letter-spacing: .28em;
+    color: rgba(255, 255, 255, .5);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: clamp(28px, 3.2vw, 38px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.01em;
+    text-transform: uppercase;
+  }
+
+  &__desc {
+    margin: 0;
+    max-width: 32ch;
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, .7);
   }
 
   &__more {
-    padding: 13px 30px;
-    border: 1px solid rgba(255, 255, 255, .5);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: auto;
+    padding: 12px 22px;
+    border: 0;
     border-radius: 999px;
     font: inherit;
     font-size: 12px;
-    letter-spacing: .22em;
+    letter-spacing: .2em;
     text-transform: uppercase;
-    color: #fff;
-    background: transparent;
+    color: #000;
+    background: #fff;
     cursor: pointer;
-    transition: background .25s ease, color .25s ease, transform .25s var(--cc-ease);
-    &:hover { background: #fff; color: #000; }
+    transition: transform .25s var(--ease), background .25s ease;
+
+    svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .3s var(--ease); }
+    &:hover svg { transform: translateX(4px); }
     &:active { transform: scale(.96); }
     &:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
   }
 
-  &__dots { display: flex; gap: 8px; }
+  // ── Puntitos ─────────────────────────────────────────────────────
+  &__dots { display: flex; justify-content: center; gap: 8px; }
+
   &__dot {
+    position: relative;
     width: 18px;
     height: 12px; // área de toque más grande que la línea
     padding: 0;
     border: 0;
     background: transparent;
     cursor: pointer;
-    position: relative;
-    transition: width .5s var(--cc-ease);
+    transition: width .5s var(--ease);
 
     &::after {
       content: '';
       position: absolute;
       inset: 5px 0;
       border-radius: 2px;
-      background: rgba(255, 255, 255, .35);
+      background: rgba(0, 0, 0, .2);
       transition: background .3s ease;
     }
-    &.is-active { width: 44px; &::after { background: #fff; } }
-    &:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    &.is-active { width: 44px; &::after { background: #000; } }
+    &:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
   }
 }
 
-// Celular: flechas más chicas y pegadas a los bordes
 @media (max-width: 560px) {
+  .cc { --body-h: 232px; }
   .cc__arrow { width: 44px; height: 44px; }
-  .cc__top { letter-spacing: .2em; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cc__name, .cc__num > span, .cc__dot { transition: none; }
+  .cc__dot, .cc__more, .cc__more svg, .cc__arrow { transition: none; }
 }

@@ -11,6 +11,7 @@
   &__stage {
     position: sticky;
     top: 0;
+    z-index: 2; // por encima de la sección blanca, que arranca escondida debajo hasta que termina el zoom
     width: 100%;
     height: 100vh;
     height: 100svh;

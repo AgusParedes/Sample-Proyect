@@ -1,11 +1,21 @@
-// Empalma con el blanco del final del zoom del hero
+// Sección blanca que aparece al terminar el zoom del hero.
+// Arranca escondida debajo del escenario del hero (margen negativo de una pantalla): cuando el zoom llena la pantalla de blanco
+// y el escenario se esconde, esta sección ya está justo en su lugar, sin scroll extra.
 .white-section {
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   min-height: 100vh;
   min-height: 100svh;
+  margin-top: -100vh;
+  margin-top: -100svh;
   padding-top: clamp(56px, 9vh, 84px); // lugar para el header fijo
   background: #fff;
+}
+
+// Sin zoom (reducir movimiento): el hero es una sola pantalla y la sección va a continuación
+@media (prefers-reduced-motion: reduce) {
+  .white-section { margin-top: 0; }
 }

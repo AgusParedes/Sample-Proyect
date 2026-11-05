@@ -44,7 +44,7 @@ const MAX_FIRE = 700;       // máximo de píxeles volando a la vez
 const NAME_AT = FLY_TIME + WAVE_TIME - 0.3; // segundos en que se considera "terminó la animación" (aparece el nombre)
 // Scroll: al scrollear, el zoom se mete dentro de un cuadradito del logo hasta llenar toda la pantalla de blanco
 const SCROLL_LENGTH = 2.6;  // largo del zoom en pantallas: 2.6 = hay que scrollear 2,6 alturas de pantalla
-const FILL_AT = 0.9;        // en qué punto del scroll (0 a 1) el cuadradito ya llena toda la pantalla; lo que sigue es blanco puro
+const FILL_AT = 1;          // en qué punto del scroll (0 a 1) el cuadradito llena toda la pantalla. 1 = justo al final: ahí aparece la sección de abajo
 const ZOOM_SMOOTH = 7;      // qué tan pegado sigue al scroll (más alto = más directo, más bajo = más suave)
 // ─────────────────────────────────────────────────────────────────
 
@@ -209,17 +209,20 @@ function waveHeight(dist, front, decay, fade) {
 
 // onIntroStart / onIntroDone: avisan cuándo arranca y cuándo termina la animación inicial
 // (también al tocar "Repetir animación").
-export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
+// onReveal(true/false): avisa cuándo el zoom terminó (pantalla toda blanca, la sección de abajo ya está a la vista) y cuándo se vuelve atrás.
+export default function HeroPixel3D({ onIntroStart, onIntroDone, onReveal }) {
   const canvasRef = useRef(null);
   const scrollRef = useRef(null);
   const sectionRef = useRef(null);
+  const stageRef = useRef(null);
   const callbacks = useRef({});
-  callbacks.current = { onIntroStart, onIntroDone };
+  callbacks.current = { onIntroStart, onIntroDone, onReveal };
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const dprMax = window.matchMedia('(pointer: coarse)').matches ? 1.5 : 2; // celulares: menos píxeles que dibujar
+    if (reduceMotion) callbacks.current.onReveal?.(true); // sin zoom: la sección de abajo se muestra normal
     const image = new Image();
     image.src = logo;
 
@@ -275,6 +278,7 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
     let startTime = 0, frame = 0, disposed = false, introTimer = 0, curDpr = 0, onScreen = true;
     let needsWrite = true, drawnFinal = false;
     let locked = true, zoomP = 0; // locked: hasta que termina la intro no se puede scrollear
+    let revealed = false;         // true cuando el zoom terminó y el escenario se esconde para dejar ver la sección de abajo
     let focus = { x: 0, y: 0 }, zoomMax = 1; // cuadradito al que se entra y cuánto hay que agrandar para llenar la pantalla
 
     function disposeLogo() {
@@ -543,10 +547,29 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
       }, reduceMotion ? 0 : NAME_AT * 1000);
     }
 
+    // Cuánto se scrolleó del zoom (0 a 1)
+    function scrollProgress() {
+      const section = sectionRef.current;
+      if (!section) return 0;
+      const range = Math.max(1, section.offsetHeight - height);
+      return locked ? 0 : clamp(-section.getBoundingClientRect().top / range);
+    }
+    // Al terminar el zoom la pantalla queda toda blanca: se esconde el escenario y aparece la sección de abajo al instante
+    function setRevealed(v) {
+      revealed = v;
+      if (stageRef.current) stageRef.current.style.visibility = v ? 'hidden' : 'visible';
+      callbacks.current.onReveal?.(v);
+    }
+
     function tick(now) {
       if (disposed) return;
       // Mientras el hero no está en pantalla no se dibuja: deja todo el rendimiento al gusano
       if (!onScreen) { lastNow = 0; frame = requestAnimationFrame(tick); return; }
+      // Con la sección de abajo a la vista no hay nada que dibujar; solo se vigila si el scroll vuelve atrás
+      if (revealed) {
+        if (scrollProgress() > 0.999) { lastNow = 0; frame = requestAnimationFrame(tick); return; }
+        setRevealed(false);
+      }
       const t = Math.max(0, (now - startTime) / 1000);
       const since = t - FLY_TIME;
       const END = FLY_TIME + WAVE_TIME + 0.2;
@@ -613,10 +636,10 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
       // 7) Scroll down: el zoom se mete dentro de un cuadradito del logo hasta que su blanco llena toda la pantalla
       const section = sectionRef.current;
       if (!reduceMotion && section) {
-        const range = Math.max(1, section.offsetHeight - height);
-        const target = locked ? 0 : clamp(-section.getBoundingClientRect().top / range);
+        const target = scrollProgress();
         zoomP += (target - zoomP) * (1 - Math.exp(-ZOOM_SMOOTH * dt)); // sigue al scroll con suavidad
         if (Math.abs(target - zoomP) < 0.0005) zoomP = target;
+        if (zoomP >= 0.995) setRevealed(true);
         const k = clamp(zoomP / FILL_AT);
         const e = k * k * (3 - 2 * k);                    // arranca y termina despacio
         const S = Math.pow(zoomMax, e);                   // zoom exponencial: se siente parejo
@@ -625,6 +648,7 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
       }
       camera.position.set(ox, oy, camDist + oz);
 
+      if (revealed) { frame = requestAnimationFrame(tick); return; } // ya se ve la sección de abajo: no se dibuja
       renderer.render(scene, camera);
       if (t > END) drawnFinal = true;
       frame = requestAnimationFrame(tick);
@@ -670,7 +694,7 @@ export default function HeroPixel3D({ onIntroStart, onIntroDone }) {
   return (
     <section className="hero-pixel" ref={sectionRef} style={{ '--scroll-len': SCROLL_LENGTH }}>
       {/* El escenario queda fijo mientras se scrollea el zoom */}
-      <div className="hero-pixel__stage">
+      <div className="hero-pixel__stage" ref={stageRef}>
         <canvas ref={canvasRef} className="hero-pixel__canvas" aria-label="Logo en 3D estampándose contra el fondo" />
         <div className="hero-pixel__scroll" ref={scrollRef} aria-hidden="true">
           <span className="hero-pixel__scroll-text">Scroll down</span>
