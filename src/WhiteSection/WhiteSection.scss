@@ -5,7 +5,7 @@
   position: relative;
   z-index: 1;
   margin-top: -100vh;
-  margin-top: -100svh;
+  margin-top: -100lvh; // mismo alto que el escenario del hero (ver HeroPixel.scss)
   background: #fff;
 
   // Primera pantalla: las categorías quedan centradas
@@ -14,7 +14,7 @@
     flex-direction: column;
     justify-content: center;
     min-height: 100vh;
-    min-height: 100svh;
+    min-height: 100lvh;
     padding-top: clamp(56px, 9vh, 84px); // lugar para el header fijo
   }
 }

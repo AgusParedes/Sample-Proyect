@@ -10,6 +10,7 @@
 * { box-sizing: border-box; }
 html {
   margin: 0;
+  overscroll-behavior-y: none; /* sin rebote ni "tirar para refrescar" en el celular */
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%; /* el celular no agranda los textos al girar la pantalla */
   text-size-adjust: 100%;
@@ -17,7 +18,17 @@ html {
 body { margin: 0; min-width: 320px; min-height: 100%; }
 img { max-width: 100%; }
 button, a { -webkit-tap-highlight-color: transparent; }
-#root { width: 100%; min-height: 100vh; min-height: 100svh; }
+#root { width: 100%; min-height: 100vh; min-height: 100lvh; }
+
+/* Celular: el scroll con el dedo tiene inercia y pasa de largo, y desde JavaScript no se puede frenar a tiempo.
+   Por eso se usa "scroll-snap": el navegador mismo frena el scroll justo al llegar a las categorías (scroll-snap-stop: always),
+   y desde ahí se puede seguir hacia el texto. Dentro del hero (el zoom) el scroll sigue siendo libre porque es más alto que la pantalla. */
+@media (pointer: coarse) and (prefers-reduced-motion: no-preference) {
+  html { scroll-snap-type: y mandatory; }
+  .hero-pixel { scroll-snap-align: start; }
+  .white-section__panel { scroll-snap-align: start; scroll-snap-stop: always; }
+  .brand { scroll-snap-align: start; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
