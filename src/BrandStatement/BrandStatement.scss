@@ -1,0 +1,107 @@
+// Texto de marca debajo de las categorías. Medidas y colores se cambian acá arriba.
+.brand {
+  --pad-x: clamp(18px, 4vw, 56px);
+  --ease: cubic-bezier(.22, 1, .36, 1);
+
+  padding: clamp(72px, 14vh, 160px) var(--pad-x) clamp(72px, 12vh, 140px);
+  background: #fff;
+  color: #000;
+
+  &__eyebrow {
+    display: block;
+    font-size: 11px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+  }
+
+  &__title {
+    max-width: 18ch;
+    margin: 22px 0 0;
+    font-size: clamp(32px, 6.2vw, 88px);
+    font-weight: 600;
+    line-height: 1.02;
+    letter-spacing: -.025em;
+  }
+
+  &__lead {
+    max-width: 46ch;
+    margin: clamp(20px, 3vh, 32px) 0 0;
+    font-size: clamp(15px, 1.5vw, 19px);
+    line-height: 1.55;
+    color: rgba(0, 0, 0, .65);
+  }
+
+  &__pillars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0 clamp(20px, 3vw, 48px);
+    margin: clamp(48px, 9vh, 96px) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__pillar {
+    padding: 22px 0 8px;
+    border-top: 1px solid rgba(0, 0, 0, .18);
+  }
+
+  &__num {
+    font-size: 11px;
+    letter-spacing: .2em;
+    color: rgba(0, 0, 0, .45);
+  }
+
+  &__pillar-title {
+    margin: 14px 0 0;
+    font-size: clamp(18px, 1.8vw, 24px);
+    font-weight: 600;
+    letter-spacing: -.01em;
+  }
+
+  &__pillar-text {
+    margin: 10px 0 0;
+    font-size: 15px;
+    line-height: 1.55;
+    color: rgba(0, 0, 0, .62);
+  }
+
+  &__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: clamp(40px, 7vh, 72px);
+    padding: 14px 26px;
+    border: 0;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 12px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: #fff;
+    background: #000;
+    cursor: pointer;
+    transition: transform .25s var(--ease), background .25s ease;
+
+    svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .3s var(--ease); }
+    &:hover svg { transform: translateX(4px); }
+    &:active { transform: scale(.96); }
+    &:focus-visible { outline: 2px solid #000; outline-offset: 3px; }
+  }
+
+  // Aparición: cada elemento sube un poco y se muestra, uno después del otro
+  &__reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity .9s var(--ease), transform .9s var(--ease);
+    transition-delay: calc(var(--i, 0) * .09s);
+  }
+  &.is-in &__reveal { opacity: 1; transform: none; }
+}
+
+@media (max-width: 720px) {
+  .brand__pillars { grid-template-columns: 1fr; gap: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand__reveal { opacity: 1; transform: none; transition: none; }
+}

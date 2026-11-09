@@ -21,7 +21,7 @@ export function buildGarment(type, mats) {
 // Si el archivo existe, reemplaza a la prenda armada en código; si no existe, no pasa nada.
 //   rot: [x, y, z] en radianes, por si el modelo viene girado o acostado (ej: [0, Math.PI, 0] lo da vuelta)
 const MODEL_FILES = {
-  tshirt: { url: '/models/remera.glb' },
+  tshirt: { url: '/models/t_shirt.glb' },
   hoodie: { url: '/models/buzo.glb' },
   pants: { url: '/models/pantalon.glb' },
 };
@@ -37,6 +37,7 @@ export function loadRealModel(type) {
       (gltf) => {
         const root = gltf.scene;
         if (cfg.rot) root.rotation.set(...cfg.rot);
+        // Actualiza las transformaciones del GLB antes de calcular su tamaño y centrarlo.
         root.updateMatrixWorld(true);
         resolve(fitModel(root, GARMENT_SIZE));
       },
